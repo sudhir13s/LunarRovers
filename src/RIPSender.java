@@ -1,31 +1,27 @@
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
 public class RIPSender implements Runnable {
 
-    //    DatagramSocket clientSocket;
-    final static int PORT = 6520;
+//    static DatagramSocket socket;
+//    final static int PORT = 6520;
     final static int BUFFER_SIZE = 504;
 //    byte[] buffer;
 
     public RIPSender() {
 
 //        try {
-//            clientSocket = new DatagramSocket(PORT);
-//            buffer = new byte[BUFFER_SIZE];
+//            socket = new DatagramSocket(PORT);
+////            buffer = new byte[BUFFER_SIZE];
 //        } catch (Exception e) {
 //            e.printStackTrace();
 //        }
     }
 
-    public static void sendRoutingTableToNeighbors() {
+    public static synchronized void sendRoutingTableToNeighbors() {
 
-        try (DatagramSocket clientSocket = new DatagramSocket(PORT)) {
+
             DatagramPacket packet;
             NextHopInfoTable nextHopeInfo;
 //            byte[] bytes;
@@ -48,17 +44,13 @@ public class RIPSender implements Runnable {
                     bytes = new byte[byteBuffer.remaining()];
                     byteBuffer.get(bytes);
 
-                    packet = new DatagramPacket(bytes, bytes.length, neighbor, PORT);
-                    clientSocket.send(packet);
+                    packet = new DatagramPacket(bytes, bytes.length, neighbor, RIPReceiver.PORT);
+                    RIPReceiver.socket.send(packet);
                     byteBuffer.clear();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
-        } catch (SocketException e) {
-            e.printStackTrace();
-        }
-
 
     }
 
@@ -79,8 +71,8 @@ public class RIPSender implements Runnable {
     public void run() {
         System.out.println("RIP sender started");
 
-        sendRoutingTableToNeighbors();
         try {
+            sendRoutingTableToNeighbors();
             Thread.sleep(10000);
         } catch (InterruptedException e) {
             e.printStackTrace();

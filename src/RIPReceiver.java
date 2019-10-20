@@ -4,9 +4,10 @@ import java.net.SocketException;
 
 public class RIPReceiver implements Runnable {
 
-    DatagramSocket receiverSocket;
+    static DatagramSocket socket;
+    final static int PORT = 6520;
+
     DatagramPacket receiverPacket;
-    final int PORT = 6520;
     final int BUFFER_SIZE = 504;
 
     public RIPReceiver() {
@@ -20,29 +21,28 @@ public class RIPReceiver implements Runnable {
 
     @Override
     public void run() {
-        System.out.println("RIP listener started");
+        System.out.println("RIP Receiver started");
         try {
-            receiverSocket = new DatagramSocket(PORT);
+            socket = new DatagramSocket(PORT);
+
+            while (true) {
+                try {
+                    byte[] bufferData = new byte[BUFFER_SIZE];
+                    receiverPacket = new DatagramPacket(bufferData, bufferData.length);
+                    socket.receive(receiverPacket);
+
+                    byte[] data = receiverPacket.getData();
+
+                    // data received. Now read serialize routing table
+                    LunarRover.rip.RIPDecodeHeaderData(data, 4, data.length);
+                    LunarRover.rip.PrintRIPInfo();
+                    // create another thread for processing
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         } catch (SocketException e) {
             e.printStackTrace();
-        }
-        while (true) {
-
-            try {
-                byte[] bufferData = new byte[BUFFER_SIZE];
-                receiverPacket = new DatagramPacket(bufferData, bufferData.length);
-                receiverSocket.receive(receiverPacket);
-
-                byte[] data = receiverPacket.getData();
-
-                // data received. Now read serialize routing table
-                LunarRover.rip.RIPDecodeHeaderData(data, 4, data.length);
-                LunarRover.rip.PrintRIPInfo();
-                // create another thread for processing
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-            }
         }
     }
 
