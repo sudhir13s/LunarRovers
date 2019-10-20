@@ -34,6 +34,8 @@ public class RoutingTable {
 
     public synchronized void updateRoutingTable(InetAddress destinationAddress, NextHopInfoTable nextHopInfo) {
         routeEntries.put(destinationAddress, nextHopInfo);
+        System.out.println("RouteTable: Routing table updated.");
+        PrintRoutingTable();
     }
 
     public static void main(String[] args) {

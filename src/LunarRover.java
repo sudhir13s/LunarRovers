@@ -104,4 +104,10 @@ public class LunarRover {
          */
 
     }
+
+    public static void PrintNeighbor() {
+        for (int i = 0; i < neighbors.size(); i++) {
+            System.out.println("Neighbor: " + neighbors.get(i));
+        }
+    }
 }

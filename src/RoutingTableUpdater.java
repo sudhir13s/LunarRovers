@@ -16,17 +16,21 @@ public class RoutingTableUpdater implements Runnable {
 
     public void ReadRouteFileAndUpdateRouteTable() {
         try {
-            List<String> routeEntries = Files.readAllLines(Paths.get("src/RouteTable/RoutingTable.txt"));
+            List<String> routeEntries = Files.readAllLines(Paths.get("RouteTable/RoutingTable.txt"));
             for (String route : routeEntries) {
                 String[] entries = route.split("\t\t");
-                NextHopInfoTable nextHopInfo;
-                nextHopInfo = new NextHopInfoTable(InetAddress.getByName(entries[1].split("/")[1]),
-                        InetAddress.getByName(entries[2].split("/")[1]), Integer.getInteger(entries[3]));
+//                NextHopInfoTable nextHopInfo;
+                NextHopInfoTable nextHopInfo = new NextHopInfoTable(InetAddress.getByName(entries[1].split("/")[1]),
+                        InetAddress.getByName(entries[2].split("/")[1]), Integer.parseInt(entries[3]));
 
                 synchronized (RoutingTable.routeEntries) {
+                    System.out.println("Updater: calling updateRoutingTable");
                     LunarRover.routingTable.updateRoutingTable(InetAddress.getByName(entries[0].split("/")[1]), nextHopInfo);
-                    if (!LunarRover.neighbors.contains(InetAddress.getByName(entries[2].split("/")[1])))
+                    if (!LunarRover.neighbors.contains(InetAddress.getByName(entries[2].split("/")[1]))) {
                         LunarRover.neighbors.add(InetAddress.getByName(entries[2].split("/")[1]));
+                        System.out.println("Updater: updated neighbors");
+                        LunarRover.PrintNeighbor();
+                    }
                 }
             }
         } catch (IOException e) {

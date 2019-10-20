@@ -20,15 +20,12 @@ public class RIPSender implements Runnable {
     }
 
     public static synchronized void sendRoutingTableToNeighbors() {
-
-
             DatagramPacket packet;
             NextHopInfoTable nextHopeInfo;
 //            byte[] bytes;
 //            ByteBuffer byteBuffer = ByteBuffer.allocate(BUFFER_SIZE);
             byte[] bytes = new byte[BUFFER_SIZE];
             ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-
             byteBuffer.clear();
 
             byteBuffer.put(LunarRover.rip.RIPEncodeHeader());
@@ -39,6 +36,7 @@ public class RIPSender implements Runnable {
                         byteBuffer.put(LunarRover.rip.RIPEncodeHeaderData(route.getKey(), nextHopeInfo.subnetMask,
                                 nextHopeInfo.neighborAddress, nextHopeInfo.hopCount));
                         //byteBuffer.put(setRIPProtocolInfo(route.getKey(), nextHopeInfo));
+                        System.out.println("Sender: Neighbor entry: " + neighbor.toString());
                     }
                     byteBuffer.flip();
                     bytes = new byte[byteBuffer.remaining()];
@@ -46,6 +44,7 @@ public class RIPSender implements Runnable {
 
                     packet = new DatagramPacket(bytes, bytes.length, neighbor, RIPReceiver.PORT);
                     RIPReceiver.socket.send(packet);
+                    System.out.println("Sender: sent routing table.");
                     byteBuffer.clear();
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -71,11 +70,14 @@ public class RIPSender implements Runnable {
     public void run() {
         System.out.println("RIP sender started");
 
-        try {
-            sendRoutingTableToNeighbors();
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        while (true) {
+            try {
+                System.out.println("Sender: Call sendRoutingTableToNeighbors");
+                sendRoutingTableToNeighbors();
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
