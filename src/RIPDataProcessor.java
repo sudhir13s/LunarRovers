@@ -1,4 +1,4 @@
-public class RoutingTableProcessor implements Runnable{
+public class RIPDataProcessor implements Runnable{
 
 
     @Override

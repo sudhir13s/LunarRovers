@@ -18,6 +18,7 @@ public class NextHopInfoTable {
 
 
     public void PrintNextHopInfoTable() {
+        System.out.print(subnetMask + "\t\t");
         System.out.print(neighborAddress + "\t\t");
         System.out.println(hopCount);
     }

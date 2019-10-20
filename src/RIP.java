@@ -1,4 +1,5 @@
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
 public class RIP {
@@ -25,6 +26,13 @@ public class RIP {
         this.hopCount = hopCount;
     }
 
+    public void PrintRIPInfo() {
+        System.out.println(this.destinationAddress);
+        System.out.println(this.subnetMask);
+        System.out.println(this.nextHopAddress);
+        System.out.println(this.hopCount);
+    }
+
     public byte[] RIPEncodeHeader() {
         byte[] ripTopHeader = new byte[4]; // 4 bytes - 1 + 1 + 2
         ByteBuffer byteBuffer = ByteBuffer.wrap(ripTopHeader);
@@ -47,12 +55,21 @@ public class RIP {
         return ripHeader;
     }
 
-//    public RIP RIPDecodeHeaderData(byte[] data, int offset, int length) {
-//        ByteBuffer byteBuffer = ByteBuffer.wrap(data, offset, length);
-//        this.destinationAddress = byteBuffer.getInt();
-//        this.subnetMask = byteBuffer.getInt();
-//        this.nextHopAddress = byteBuffer.getInt();
-//        this.hopCount = byteBuffer.getInt();
-//        return this;
+    public RIP RIPDecodeHeaderData(byte[] data, int offset, int length) {
+        ByteBuffer byteBuffer = ByteBuffer.wrap(data, offset, length);
+
+        byte[] bytes = new byte[4];
+        byteBuffer.get(bytes);
+
+        try {
+            this.destinationAddress = InetAddress.getByAddress(bytes);
+            this.subnetMask = InetAddress.getByAddress(bytes);
+            this.nextHopAddress = InetAddress.getByAddress(bytes);
+            this.hopCount = byteBuffer.getInt();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        return this;
     }
+}
 

@@ -28,10 +28,13 @@ public class RoutingTable {
         }
     }
 
-    public HashMap<InetAddress, NextHopInfoTable> getRoutingTable() {
+    public synchronized HashMap<InetAddress, NextHopInfoTable> getRoutingTable() {
         return routeEntries;
     }
 
+    public synchronized void updateRoutingTable(InetAddress destinationAddress, NextHopInfoTable nextHopInfo) {
+        routeEntries.put(destinationAddress, nextHopInfo);
+    }
 
     public static void main(String[] args) {
         RoutingTable rt = new RoutingTable();

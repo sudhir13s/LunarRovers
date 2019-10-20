@@ -9,8 +9,9 @@ public class LunarRover {
     static RIP rip;
 
     public LunarRover() {
-//        routingTable = new RoutingTable();
-//        neighbors = new ArrayList<>();
+        routingTable = new RoutingTable();
+        neighbors = new ArrayList<>();
+        rip = new RIP();
     }
 
     /***
@@ -20,20 +21,25 @@ public class LunarRover {
     public static void main(String[] args) {
 
         routingTable = new RoutingTable();
-        try {
-            routingTable.routeEntries.put(InetAddress.getByName("127.0.0.1"),
-                    new NextHopInfoTable(InetAddress.getByName("255.255.255.0"),
-                            InetAddress.getByName("127.0.0.1"), 1));
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            RoutingTable.routeEntries.put(InetAddress.getByName("127.0.0.1"),
+//                    new NextHopInfoTable(InetAddress.getByName("255.255.255.0"),
+//                            InetAddress.getByName("127.0.0.1"), 1));
+//        } catch (UnknownHostException e) {
+//            e.printStackTrace();
+//        }
         neighbors = new ArrayList<>();
-        try {
-            neighbors.add(InetAddress.getByName("127.0.0.1"));
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            neighbors.add(InetAddress.getByName("127.0.0.1"));
+//        } catch (UnknownHostException e) {
+//            e.printStackTrace();
+//        }
         rip = new RIP();
+
+        // read routine table file and update.
+        RoutingTableUpdater updater = new RoutingTableUpdater();
+        Thread RTUpdaterThread = new Thread(updater, "Routing table updater");
+        RTUpdaterThread.start();
 
         /***
          * Processing packets received from application.
@@ -64,8 +70,8 @@ public class LunarRover {
         // create threads to process routing information received from connected neighbors.
             // **Server
 
-        RIPListener ripListener = new RIPListener();
-        Thread RIPListenerThread = new Thread(ripListener, "RIP Listener");
+        RIPReceiver ripReceiver = new RIPReceiver();
+        Thread RIPListenerThread = new Thread(ripReceiver, "RIP Receiver");
         RIPListenerThread.start();
             // receive data on UDP port 6520
             // create a new thread to process it. Now keep listening.
