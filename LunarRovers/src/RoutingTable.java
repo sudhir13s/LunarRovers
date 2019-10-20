@@ -36,7 +36,9 @@ public class RoutingTable {
     public static void main(String[] args) {
         RoutingTable rt = new RoutingTable();
         try {
-            routeEntries.put(InetAddress.getByName("127.0.0.1"), new NextHopInfoTable(InetAddress.getByName("255.255.255.0"), InetAddress.getByName("127.0.0.1"), 1));
+            routeEntries.put(InetAddress.getByName("192.168.56.3"),
+                    new NextHopInfoTable(InetAddress.getByName("255.255.255.0"),
+                            InetAddress.getByName("192.168.56.3"), 1));
 //            routeEntries.put(InetAddress.getByName("192.168.1.2"), new NextHopInfoTable(InetAddress.getByName("255.255.255.0"), InetAddress.getByName("192.168.1.0"), 1));
 //            routeEntries.put(InetAddress.getByName("192.168.1.3"), new NextHopInfoTable(InetAddress.getByName("255.255.255.0"), InetAddress.getByName("192.168.1.0"), 1));
 //            routeEntries.put(InetAddress.getByName("192.168.1.4"), new NextHopInfoTable(InetAddress.getByName("255.255.255.0"), InetAddress.getByName("192.168.1.0"), 1));

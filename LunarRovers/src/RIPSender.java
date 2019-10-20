@@ -50,6 +50,7 @@ public class RIPSender implements Runnable {
 
                 packet = new DatagramPacket(bytes, BUFFER_SIZE, neighbor, PORT);
                 clientSocket.send(packet);
+                byteBuffer.clear();
             }
             catch (Exception e) {
                 e.printStackTrace();
