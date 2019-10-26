@@ -60,7 +60,7 @@ public class RIPSender implements Runnable {
             packet = new DatagramPacket(data, data.length, group, this.port);
             // let 'er rip
             socket.send(packet);
-            System.out.println("RIPSender: UDP packet sent.");
+//            System.out.println("RIPSender: UDP packet sent.");
         }
     }
 

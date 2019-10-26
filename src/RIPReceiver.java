@@ -42,7 +42,7 @@ public class RIPReceiver implements Runnable {
 //                byte[] bufferData = hexStringToByteArray("0202000000020001c0a83803ffffff00c0a8380300000001c0a83804ffffff00c0a8380400000001");
                 DatagramPacket receiverPacket = new DatagramPacket(bufferData, bufferData.length);
                 multicastSocket.receive(receiverPacket);
-                System.out.println("RIPReceiver: received packets***");
+//                System.out.println("RIPReceiver: received packets***");
 
                 byte[] data = receiverPacket.getData();
                 RIPDataProcessor ripDataProcessor = new RIPDataProcessor(data);

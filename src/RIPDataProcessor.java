@@ -30,7 +30,7 @@ public class RIPDataProcessor implements Runnable {
                     NextHopInfoTable nextHopInfo = new NextHopInfoTable(entry.getSubnetMask(), entry.getNextHopAddress(),
                             0, entry.getHopCount());
 
-                    System.out.println("RIPDataProcessor: calling updateRoutingTable");
+//                    System.out.println("RIPDataProcessor: calling updateRoutingTable");
                     if (rt.updateRoutingTable(entry.getDestinationAddress(), nextHopInfo)) {
                         isRouteChanged = true;
                     }
@@ -63,8 +63,10 @@ public class RIPDataProcessor implements Runnable {
         switch (this.receivedBytes[0]) {
             case 1:
                 // ProcessRIPRequest(); // implement later.
+//                break;
             case 2:
                 ProcessInputRIPData();
+                break;
             default:
                 System.err.println("Unknown RIP command.: " + this.receivedBytes[0]);
         }

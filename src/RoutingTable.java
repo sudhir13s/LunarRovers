@@ -19,19 +19,21 @@ public class RoutingTable {
 
     public synchronized void PrintRoutingTable() {
         System.out.println("*****Printing routing table info*****");
-        System.out.print("Destination \t\t");
-        System.out.print("Subnet mask \t\t");
-        System.out.print("Next hop \t\t");
+        System.out.print("Destination \t");
+        System.out.print("Subnet mask \t");
+        System.out.print("Next hop \t");
         System.out.print("Interface \t");
-        System.out.println("Metric count");
+        System.out.print("Metric count \t");
+        System.out.println("Time");
         NextHopInfoTable nextHopeInfo;
         for (Map.Entry<InetAddress, NextHopInfoTable> route : routeEntries.entrySet()) {
             nextHopeInfo = route.getValue();
-            System.out.print(route.getKey() + "\t\t");
-            System.out.print(nextHopeInfo.subnetMask + "\t\t");
-            System.out.print(nextHopeInfo.nextHopAddress + "\t\t");
-            System.out.print(nextHopeInfo.interfaceId + "\t\t\t");
-            System.out.println(nextHopeInfo.hopCount);
+            System.out.print(route.getKey() + "\t");
+            System.out.print(nextHopeInfo.subnetMask + "\t");
+            System.out.print(nextHopeInfo.nextHopAddress + "\t");
+            System.out.print(nextHopeInfo.interfaceId + "\t\t");
+            System.out.print(nextHopeInfo.hopCount + "\t\t");
+            System.out.println(nextHopeInfo.ttl);
         }
     }
 
@@ -51,11 +53,12 @@ public class RoutingTable {
                 NextHopInfoTable rtInfo = routeEntries.get(destinationAddress);
                 // next hope same
                 if (rtInfo.nextHopAddress.equals(nextHopInfo.nextHopAddress)) {
-                    if (rtInfo.hopCount > nextHopInfo.hopCount) {
+                    if (rtInfo.hopCount > nextHopInfo.hopCount + 1) {
                         nextHopInfo.metricChanged = true;
+                        nextHopInfo.hopCount = nextHopInfo.hopCount + 1;
                         nextHopInfo.interfaceId = rtInfo.interfaceId;
                         routeEntries.put(destinationAddress, nextHopInfo);
-                        System.out.println("RoutingTable: Route table update for " + destinationAddress + ": " + nextHopInfo.hopCount);
+                        System.out.println("RoutingTable: Route table update for " + destinationAddress + nextHopInfo.nextHopAddress + ": " + nextHopInfo.hopCount);
                         isRouteChanged = true;
                     } else {
                         // just update the time.
@@ -63,30 +66,35 @@ public class RoutingTable {
 //                        long time = System.currentTimeMillis();
                         rtInfo.ttl = instant.getEpochSecond();
                         routeEntries.put(destinationAddress, rtInfo);
-                        System.out.println("RoutingTable: Route table update for " + destinationAddress + ": " + rtInfo.ttl);
+//                        System.out.println("RoutingTable: Route table update for " + destinationAddress + ": " + rtInfo.ttl);
                     }
                 } else {
                     // different route received for this entry.
-                    if (rtInfo.hopCount > nextHopInfo.hopCount) {
+                    if (rtInfo.hopCount > nextHopInfo.hopCount + 1) {
                         nextHopInfo.metricChanged = true;
+                        nextHopInfo.hopCount = nextHopInfo.hopCount + 1;
                         if (nextHopInfo.interfaceId == 0) {
                             RoutingTable.InterfaceID = RoutingTable.InterfaceID + 1;
                             nextHopInfo.interfaceId = RoutingTable.InterfaceID;
                         }
                         routeEntries.put(destinationAddress, nextHopInfo);
-                        System.out.println("RoutingTable: Route table update for " + destinationAddress + ": " + nextHopInfo.nextHopAddress);
+//                        System.out.println("RoutingTable: Route table update for " + destinationAddress + ": " + nextHopInfo.nextHopAddress);
                         isRouteChanged = true;
                     }
                 }
             } else {
                 // new route, new entry.
                 nextHopInfo.metricChanged = true;
+                // if not rover self entry, increment the count by 1.
+                if (!LunarRover.MAPPING.containsValue(nextHopInfo.nextHopAddress)) {
+                    nextHopInfo.hopCount = nextHopInfo.hopCount + 1;
+                }
                 if (nextHopInfo.interfaceId == 0) {
                     RoutingTable.InterfaceID = RoutingTable.InterfaceID + 1;
                     nextHopInfo.interfaceId = RoutingTable.InterfaceID;
                 }
                 routeEntries.put(destinationAddress, nextHopInfo);
-                System.out.println("RoutingTable: Route table update - new entry " + destinationAddress + ": " + nextHopInfo.nextHopAddress);
+//                System.out.println("RoutingTable: Route table update - new entry " + destinationAddress + ": " + nextHopInfo.nextHopAddress);
                 isRouteChanged = true;
             }
         }
