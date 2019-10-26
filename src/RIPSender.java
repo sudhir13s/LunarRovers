@@ -1,102 +1,100 @@
+import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.Map;
 
 public class RIPSender implements Runnable {
 
-//    static DatagramSocket socket;
+    private InetAddress multicastAddress;
+    private int port = 6520;
+    private int nodeNum;
+
+    //    static DatagramSocket socket;
 //    final static int PORT = 6520;
-    final static int BUFFER_SIZE = 504;
+//    private final static int BUFFER_SIZE = 504;
 //    byte[] buffer;
 
-    public RIPSender() {
-
-//        try {
-//            socket = new DatagramSocket(PORT);
-////            buffer = new byte[BUFFER_SIZE];
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+    public RIPSender(int nodeNum) throws UnknownHostException {
+        this(InetAddress.getByName("230.230.230.230"), 6520, nodeNum);
     }
 
-    public static synchronized void sendRoutingTableToNeighbors() {
-            DatagramPacket packet;
-            NextHopInfoTable nextHopeInfo;
-//            byte[] bytes;
-//            ByteBuffer byteBuffer = ByteBuffer.allocate(BUFFER_SIZE);
-            byte[] bytes = new byte[BUFFER_SIZE];
-            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-            byteBuffer.clear();
+    public RIPSender(String multicastIp, int port, int nodeNum) {
+        try {
+            this.multicastAddress = InetAddress.getByName(multicastIp);
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        this.port = port;
+        this.nodeNum = nodeNum;
+    }
 
-            byteBuffer.put(LunarRover.rip.RIPEncodeHeader());
-            for (InetAddress neighbor : LunarRover.neighbors) {
-                try {
-                    for (Map.Entry<InetAddress, NextHopInfoTable> route : LunarRover.routingTable.getRoutingTable().entrySet()) {
-                        nextHopeInfo = route.getValue();
-                        byteBuffer.put(LunarRover.rip.RIPEncodeHeaderData(route.getKey(), nextHopeInfo.subnetMask,
-                                nextHopeInfo.neighborAddress, nextHopeInfo.hopCount));
-                        //byteBuffer.put(setRIPProtocolInfo(route.getKey(), nextHopeInfo));
-                        System.out.println("Sender: Neighbor entry: " + neighbor.toString());
-                    }
-                    byteBuffer.flip();
-                    bytes = new byte[byteBuffer.remaining()];
-                    byteBuffer.get(bytes);
+    public RIPSender(InetAddress multicastIp, int port, int nodeNum) {
+        this.multicastAddress = multicastIp;
+        this.port = port;
+        this.nodeNum = nodeNum;
+    }
 
-                    packet = new DatagramPacket(bytes, bytes.length, neighbor, RIPReceiver.PORT);
-                    RIPReceiver.socket.send(packet);
-                    System.out.println("Sender: sent routing table.");
-                    byteBuffer.clear();
-                } catch (Exception e) {
-                    e.printStackTrace();
+    private synchronized void SendUDPPacket() throws IOException {
+        // get multicast group
+        DatagramSocket socket = new DatagramSocket();
+        InetAddress group = this.multicastAddress;
+        DatagramPacket packet;
+        NextHopInfoTable nextHopeInfo;
+
+        synchronized (RoutingTable.routeEntriesLock) {
+            RIP rip = new RIP();
+            for (Map.Entry<InetAddress, NextHopInfoTable> route : RoutingTable.routeEntries.entrySet()) {
+                nextHopeInfo = route.getValue();
+                // implement split horizon with poison reverse.
+                Integer hopCount = nextHopeInfo.hopCount;
+                if (hopCount > 1) {
+                    hopCount = 16;
                 }
+                // add RIP entry
+                RIPEntry ripEntry = new RIPEntry(route.getKey(), nextHopeInfo.subnetMask, nextHopeInfo.nextHopAddress, hopCount);
+                rip.ripEntries.add(ripEntry);
             }
-
+            // Packet setup
+            byte[] data = rip.RIPEncodeData();
+            packet = new DatagramPacket(data, data.length, group, this.port);
+            // let 'er rip
+            socket.send(packet);
+            System.out.println("RIPSender: UDP packet sent.");
+        }
     }
-
-//    public static byte[] setRIPProtocolInfo(InetAddress destinationAddress, NextHopInfoTable nextHopeInfo) {
-//        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-//        try {
-//            outputStream.write(destinationAddress.getAddress());
-//            outputStream.write(nextHopeInfo.subnetMask.getAddress());
-//            outputStream.write(nextHopeInfo.neighborAddress.getAddress());
-//            outputStream.write(nextHopeInfo.hopCount.byteValue());
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        return outputStream.toByteArray();
-//    }
 
     @Override
     public void run() {
-        System.out.println("RIP sender started");
+        System.out.println("RIPSender: RIP sender started");
 
         while (true) {
             try {
-                System.out.println("Sender: Call sendRoutingTableToNeighbors");
-                sendRoutingTableToNeighbors();
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
+//                System.out.println("Sender: Call sendRoutingTable");
+                SendUDPPacket();
+                Thread.sleep(5000);
+            } catch (InterruptedException | IOException e) {
                 e.printStackTrace();
             }
         }
     }
 
     public static void main(String[] args) {
-        RoutingTable rt = new RoutingTable();
-        LunarRover lr = new LunarRover();
-        try {
-            RoutingTable.routeEntries.put(InetAddress.getByName("192.168.56.3"),
-                    new NextHopInfoTable(InetAddress.getByName("255.255.255.0"),
-                            InetAddress.getByName("192.168.56.3"), 1));
-            LunarRover.neighbors.add(InetAddress.getByName("192.168.56.3"));
-//            routeEntries.put(InetAddress.getByName("192.168.1.2"), new NextHopInfoTable(InetAddress.getByName("255.255.255.0"), InetAddress.getByName("192.168.1.0"), 1));
-//            routeEntries.put(InetAddress.getByName("192.168.1.3"), new NextHopInfoTable(InetAddress.getByName("255.255.255.0"), InetAddress.getByName("192.168.1.0"), 1));
-//            routeEntries.put(InetAddress.getByName("192.168.1.4"), new NextHopInfoTable(InetAddress.getByName("255.255.255.0"), InetAddress.getByName("192.168.1.0"), 1));
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-//        RIPSender client = new RIPSender();
-        sendRoutingTableToNeighbors();
+//        RoutingTable rt = new RoutingTable();
+//        LunarRover lr = new LunarRover();
+//        try {
+//            RoutingTable.routeEntries.put(InetAddress.getByName("192.168.56.3"),
+//                    new NextHopInfoTable(InetAddress.getByName("255.255.255.0"),
+//                            InetAddress.getByName("192.168.56.3"), 1));
+//            RoutingTable.neighbors.add(InetAddress.getByName("192.168.56.3"));
+////            routeEntries.put(InetAddress.getByName("192.168.1.2"), new NextHopInfoTable(InetAddress.getByName("255.255.255.0"), InetAddress.getByName("192.168.1.0"), 1));
+////            routeEntries.put(InetAddress.getByName("192.168.1.3"), new NextHopInfoTable(InetAddress.getByName("255.255.255.0"), InetAddress.getByName("192.168.1.0"), 1));
+////            routeEntries.put(InetAddress.getByName("192.168.1.4"), new NextHopInfoTable(InetAddress.getByName("255.255.255.0"), InetAddress.getByName("192.168.1.0"), 1));
+//        } catch (UnknownHostException e) {
+//            e.printStackTrace();
+//        }
+////        RIPSender client = new RIPSender();
+//        sendRoutingTableToNeighbors();
 
     }
 }
