@@ -7,10 +7,10 @@ public class RIPReceiver implements Runnable {
 
     static MulticastSocket multicastSocket;
     private InetAddress multicastAddress;
-    private int multicastPort = 6520;
+    private int multicastPort = 5520;
 
     RIPReceiver() throws UnknownHostException {
-        this(InetAddress.getByName("230.230.230.230"), 6520);
+        this(InetAddress.getByName("230.230.230.230"), 5520);
     }
 
     RIPReceiver(String multicastIp, int port) {

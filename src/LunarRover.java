@@ -1,11 +1,12 @@
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.HashMap;
 
 public class LunarRover {
 
-    final static int PORT = 6520;
-    final static String MULTICAST_ADDRESS = "230.230.230.230";
+    final static int PORT = 5520;
+    final static String MULTICAST_ADDRESS = "230.231.232.233";
     static HashMap<InetAddress, InetAddress> MAPPING = new HashMap<>();
     static Integer SLEEP_TIME = 5000;
 
@@ -22,15 +23,16 @@ public class LunarRover {
             int nodeNum = Integer.parseInt(args[0]);
             System.out.println("I'm node " + nodeNum);
             try {
-                InetAddress localhost = InetAddress.getByName(InetAddress.getLocalHost().getHostAddress());
+                String localhost = InetAddress.getLocalHost().getHostAddress();
 //                NetworkInterface networkInterface = NetworkInterface.getByInetAddress(localhost);
 //                InetAddress subnetMask = networkInterface.getInterfaceAddresses().get(0);
 
                 System.out.println("Broadcasting from: " + localhost);
+                InetAddress hostAddress = InetAddress.getByName(localhost);
 
                 // create a child thread to update node entries in routing table.
                 // implemented Runnable, but will not create thread. normal run() call.
-                HostUpdate hostUpdate = new HostUpdate(args, localhost, localhost);
+                HostUpdate hostUpdate = new HostUpdate(args, hostAddress, hostAddress);
 //                Thread hostUpdateThread = new Thread(hostUpdate, "Host Updater");
 //                hostUpdateThread.start();
                 hostUpdate.run();

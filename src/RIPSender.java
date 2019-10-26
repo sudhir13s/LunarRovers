@@ -7,7 +7,7 @@ import java.util.Map;
 public class RIPSender implements Runnable {
 
     private InetAddress multicastAddress;
-    private int port = 6520;
+    private int port = 5520;
     private int nodeNum;
 
     //    static DatagramSocket socket;
@@ -16,7 +16,7 @@ public class RIPSender implements Runnable {
 //    byte[] buffer;
 
     public RIPSender(int nodeNum) throws UnknownHostException {
-        this(InetAddress.getByName("230.230.230.230"), 6520, nodeNum);
+        this(InetAddress.getByName("230.230.230.230"), 5520, nodeNum);
     }
 
     public RIPSender(String multicastIp, int port, int nodeNum) {
