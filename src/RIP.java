@@ -22,6 +22,7 @@ public class RIP {
         try {
             this.command = byteBuffer.get(1);
             this.version = byteBuffer.get(1);
+            byteBuffer.getShort();
             // next 2 bytes are zero.
             byteBuffer.getShort();
             // now process data.

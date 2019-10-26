@@ -66,7 +66,7 @@ public class RIPDataProcessor implements Runnable {
             case 2:
                 ProcessInputRIPData();
             default:
-                System.err.println("Unknown RIP command.");
+                System.err.println("Unknown RIP command.: " + this.receivedBytes[0]);
         }
     }
 
@@ -80,7 +80,7 @@ public class RIPDataProcessor implements Runnable {
     }
 
     public static void main(String[] args) {
-        byte[] bufferData = RIPReceiver.hexStringToByteArray("0202000000020001c0a83803ffffff00c0a8380300000001c0a83804ffffff00c0a8380400000001");
+        byte[] bufferData = RIPReceiver.hexStringToByteArray("0202000000020001c0a83803ffffff00c0a838030000000100020001c0a83803ffffff00c0a8380300000001");
         RIPDataProcessor ripDataProcessor = new RIPDataProcessor(bufferData);
         ripDataProcessor.run();
     }
