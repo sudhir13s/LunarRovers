@@ -1,16 +1,23 @@
-import java.net.Inet4Address;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.util.HashMap;
+import java.net.SocketException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class LunarRover {
 
-    final static int PORT = 5520;
-    final static String MULTICAST_ADDRESS = "230.231.232.233";
-    static HashMap<InetAddress, InetAddress> MAPPING = new HashMap<>();
-    static Integer SLEEP_TIME = 5000;
+    final static String MULTICAST_ADDRESS = "224.0.0.9";
+    final static int MULTICAST_PORT = 5520;
+    final static int RIP_PORT = 5521;
+    static DatagramSocket socket;
+    static Map<InetAddress, InetAddress> MAPPING = new ConcurrentHashMap<>();
 
     public LunarRover() {
+//        try {
+//            socket = new DatagramSocket(RIP_PORT);
+//        } catch (SocketException e) {
+//            e.printStackTrace();
+//        }
     }
 
     /***
@@ -39,12 +46,17 @@ public class LunarRover {
 
                 // Starting Multicast Receiver
                 System.out.println("Starting Multicast Receiver...");
-                Thread receiver = new Thread(new RIPReceiver(MULTICAST_ADDRESS, PORT), "RIP Receiver");
+                Thread multicastReceiver = new Thread(new RIPMulticastReceiver(MULTICAST_ADDRESS, MULTICAST_PORT), "RIP Multicast Receiver");
+                multicastReceiver.start();
+
+                // normal receiver.
+                System.out.println("Starting Receiver...");
+                Thread receiver = new Thread(new RIPReceiver(RIP_PORT, socket), "RIP Receiver");
                 receiver.start();
 
-                // Starting Multicast Sender
-                System.out.println("Starting Multicast Sender...");
-                Thread sender = new Thread(new RIPSender(MULTICAST_ADDRESS, PORT, nodeNum), "RIP Sender");
+                // Starting Sender
+                System.out.println("Starting Sender...");
+                Thread sender = new Thread(new RIPSender(RIP_PORT, socket), "RIP Sender");
                 sender.start();
 
                 // Garbage Collector
@@ -53,7 +65,7 @@ public class LunarRover {
                 garbageCollector.start();
 
                 while (true) {
-                    Thread.sleep(SLEEP_TIME);
+                    Thread.sleep(5000);
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -91,7 +103,7 @@ public class LunarRover {
     // create threads to process routing information received from connected neighbors.
     // **Server
 
-//    RIPReceiver ripReceiver = new RIPReceiver(MULTICAST_ADDRESS, PORT);
+//    RIPMulticastReceiver ripReceiver = new RIPMulticastReceiver(MULTICAST_ADDRESS, PORT);
 //    Thread RIPListenerThread = new Thread(ripReceiver, "RIP Receiver");
 //        RIPListenerThread.start();
     // receive data on UDP port 6520

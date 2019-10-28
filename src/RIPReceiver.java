@@ -1,87 +1,44 @@
 import java.io.IOException;
 import java.net.*;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 public class RIPReceiver implements Runnable {
+    private int port;
+//    private DatagramSocket socket;
 
-    static MulticastSocket multicastSocket;
-    private InetAddress multicastAddress;
-    private int multicastPort = 5520;
+    static DatagramSocket SOCKET;
+    final static int PORT = 5521;
 
-    RIPReceiver() throws UnknownHostException {
-        this(InetAddress.getByName("230.230.230.230"), 5520);
+    RIPReceiver() {
+        this.port = 5521;
+    }
+    RIPReceiver(int port, DatagramSocket socket) throws SocketException {
+        this.port = port;
+//        this.socket = socket;
+        SOCKET = new DatagramSocket(PORT);
     }
 
-    RIPReceiver(String multicastIp, int port) {
+    private void ReceiveUDPPacket() {
         try {
-            this.multicastAddress = InetAddress.getByName(multicastIp);
-        } catch (UnknownHostException e) {
+            int bufferSize = 504;
+            byte[] bufferData = new byte[bufferSize];
+            DatagramPacket receiverPacket = new DatagramPacket(bufferData, bufferData.length);
+            SOCKET.receive(receiverPacket);
+
+//            System.out.println("RIPReceiver: Received UDP message.");
+            byte[] data = receiverPacket.getData();
+            RIPDataProcessor ripDataProcessor = new RIPDataProcessor(data, receiverPacket.getAddress());
+            Thread ripDataProcessorThread = new Thread(ripDataProcessor, "RIP Data Processor");
+            ripDataProcessorThread.start();
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        this.multicastPort = port;
-    }
-
-    private RIPReceiver(InetAddress multicastIp, int port) {
-        this.multicastAddress = multicastIp;
-        this.multicastPort = port;
-    }
-
-    private void JoinMulticastGroup() throws IOException {
-        multicastSocket = new MulticastSocket(this.multicastPort);
-        multicastSocket.joinGroup(this.multicastAddress);
-        System.out.println("RIPReceiver: Joined multicast group on port " + this.multicastPort);
-    }
-
-    private void ReceiveRIPData() {
-        // any condition??
-        while (true) {
-            try {
-                int bufferSize = 504;
-                byte[] bufferData = new byte[bufferSize];
-//                byte[] bufferData = hexStringToByteArray("0202000000020001c0a83803ffffff00c0a8380300000001c0a83804ffffff00c0a8380400000001");
-                DatagramPacket receiverPacket = new DatagramPacket(bufferData, bufferData.length);
-                multicastSocket.receive(receiverPacket);
-//                System.out.println("RIPReceiver: received packets***");
-
-                byte[] data = receiverPacket.getData();
-                RIPDataProcessor ripDataProcessor = new RIPDataProcessor(data);
-                Thread ripDataProcessorThread = new Thread(ripDataProcessor, "RIP Data Processor");
-                ripDataProcessorThread.start();
-
-                // give us a way out if needed
-//                if("EXIT".equals(msg)) {
-//                    System.out.println("No more messages. Exiting : "+msg);
-//                    break;
-//                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private void LeaveMulticastGroup() throws IOException {
-        //close up ship
-        multicastSocket.leaveGroup(this.multicastAddress);
-        multicastSocket.close();
-    }
-
-    private void ReceiveUDPPacket() throws IOException {
-        //join to multicast group.
-        JoinMulticastGroup();
-        //receive data.
-        ReceiveRIPData();
-        //leave multicast group.
-        LeaveMulticastGroup();
     }
 
     @Override
     public void run() {
-        System.out.println("RIPReceiver: RIP Receiver started");
-        try {
+//        System.out.println("RIPReceiver: RIP Receiver started");
+        while (true) {
             ReceiveUDPPacket();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
@@ -96,13 +53,13 @@ public class RIPReceiver implements Runnable {
     }
 
     public static void main(String[] args) {
-        RIPReceiver server = null;
-        try {
-            server = new RIPReceiver();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-        assert server != null;
-        server.ReceiveRIPData();
+//        RIPMulticastReceiver server = null;
+//        try {
+//            server = new RIPMulticastReceiver();
+//        } catch (UnknownHostException e) {
+//            e.printStackTrace();
+//        }
+//        assert server != null;
+//        server.ReceiveRIPData();
     }
 }

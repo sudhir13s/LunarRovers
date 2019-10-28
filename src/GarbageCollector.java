@@ -5,11 +5,14 @@ import java.util.Map;
 
 public class GarbageCollector implements Runnable {
 
-    private synchronized void RemoveUnreachableRoutesFromRoutingTable() {
+    private void RemoveUnreachableRoutesFromRoutingTable() {
         NextHopInfoTable nextHopeInfo;
+        boolean isTriggerUpdate = false;
+        RoutingTable rt = new RoutingTable();
 
-        synchronized (RoutingTable.routeEntriesLock) {
-            Iterator<Map.Entry<InetAddress, NextHopInfoTable>> iterator = RoutingTable.routeEntries.entrySet().iterator();
+//            System.out.println("In synchronized");
+        Iterator<Map.Entry<InetAddress, NextHopInfoTable>> iterator = RoutingTable.routeEntries.entrySet().iterator();
+//        synchronized (RoutingTable.routeEntriesLock) {
             while (iterator.hasNext()) {
                 Map.Entry<InetAddress, NextHopInfoTable> route = iterator.next();
                 nextHopeInfo = route.getValue();
@@ -18,46 +21,54 @@ public class GarbageCollector implements Runnable {
                 if (nextHopeInfo.hopCount == 0) {
                     nextHopeInfo.ttl = instant.getEpochSecond();
                     RoutingTable.routeEntries.put(route.getKey(), nextHopeInfo);
+//                    System.out.println("update self timer.");
                 }
                 // remaining entries.
                 else if (nextHopeInfo.hopCount > 0) {
+//                    System.out.println("GarbageCollector: Inside hopCount > 0");
                     // means the route is not reachable. update expire entry or remove it.
-                    if (nextHopeInfo.ttl == 0) {
-                        System.out.println("GarbageCollector: Removing entry: " + route.getKey());
+                    if (nextHopeInfo.ttl == 0 && nextHopeInfo.hopCount == 16 && !nextHopeInfo.metricChanged) {
+//                        System.out.println("GarbageCollector: Removing entry: " + route.getKey());
                         iterator.remove();
-                    }
-                    else if (instant.getEpochSecond() - nextHopeInfo.ttl > 10) {
+                        LunarRover.MAPPING.remove(route.getKey());
+                    } else if ((instant.getEpochSecond() - nextHopeInfo.ttl > 5) && (nextHopeInfo.hopCount != 16)) {
                         nextHopeInfo.ttl = 0;
                         nextHopeInfo.hopCount = 16;
                         nextHopeInfo.metricChanged = true;
                         RoutingTable.routeEntries.put(route.getKey(), nextHopeInfo);
-                        RoutingTable.isTriggerUpdate = true;
-                        System.out.println("GarbageCollector: updated ttl time to zero for entry: " + route.getKey());
+                        isTriggerUpdate = true;
+//                        System.out.println("GarbageCollector: updated ttl time to zero for entry: " + route.getKey());
                     }
+//                    System.out.println("GarbageCollector: " + instant.getEpochSecond() + " - " + nextHopeInfo.ttl);
                 }
             }
-        }
+//        }
 
         // if RoutingTable.isTriggerUpdate flag is set, send trigger update.
-        if (RoutingTable.isTriggerUpdate) {
-            Thread ripTriggerUpdate = new Thread(new RIPTriggerUpdate(LunarRover.MULTICAST_ADDRESS, LunarRover.PORT), "RIP Trigger Update");
-            ripTriggerUpdate.start();
+        if (isTriggerUpdate) {
+//            System.out.println("GarbageCollector: RIP Trigger update called.");
+            rt.PrintRoutingTable();
+            RIPTriggerUpdate.isTriggerUpdate = true;
+            isTriggerUpdate = false;
+//            Thread ripTriggerUpdate = new Thread(new RIPTriggerUpdate(LunarRover.MULTICAST_ADDRESS, LunarRover.MULTICAST_PORT), "RIP Trigger Update");
+//            ripTriggerUpdate.start();
         }
     }
 
     @Override
     public void run() {
-        try {
-            while (true) {
-                RemoveUnreachableRoutesFromRoutingTable();
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        while (true) {
+            RemoveUnreachableRoutesFromRoutingTable();
+//            try {
+//                Thread.sleep(100);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
         }
+
+    }
+
+    public static void main(String[] args) {
+
     }
 }

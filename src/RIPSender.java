@@ -3,52 +3,32 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.LongUnaryOperator;
 
 public class RIPSender implements Runnable {
+    private int port;
+    private DatagramSocket socket;
 
-    private InetAddress multicastAddress;
-    private int port = 5520;
-    private int nodeNum;
-
-    //    static DatagramSocket socket;
-//    final static int PORT = 6520;
-//    private final static int BUFFER_SIZE = 504;
-//    byte[] buffer;
-
-    public RIPSender(int nodeNum) throws UnknownHostException {
-        this(InetAddress.getByName("230.230.230.230"), 5520, nodeNum);
+    RIPSender() {
+        this.port = 5521;
     }
 
-    public RIPSender(String multicastIp, int port, int nodeNum) {
-        try {
-            this.multicastAddress = InetAddress.getByName(multicastIp);
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
+    RIPSender(int port, DatagramSocket socket) {
         this.port = port;
-        this.nodeNum = nodeNum;
+        this.socket = socket;
     }
 
-    public RIPSender(InetAddress multicastIp, int port, int nodeNum) {
-        this.multicastAddress = multicastIp;
-        this.port = port;
-        this.nodeNum = nodeNum;
-    }
-
-    private synchronized void SendUDPPacket() throws IOException {
-        // get multicast group
-        DatagramSocket socket = new DatagramSocket();
-        InetAddress group = this.multicastAddress;
-        DatagramPacket packet;
-        NextHopInfoTable nextHopeInfo;
-
-        synchronized (RoutingTable.routeEntriesLock) {
+    public void SendUDPPacket() throws IOException {
+        // get socket
+//        LunarRover.socket = new DatagramSocket();
+//        synchronized (RoutingTable.routeEntriesLock) {
+        for (Map.Entry<InetAddress, InetAddress> neighbors : LunarRover.MAPPING.entrySet()) {
             RIP rip = new RIP();
             for (Map.Entry<InetAddress, NextHopInfoTable> route : RoutingTable.routeEntries.entrySet()) {
-                nextHopeInfo = route.getValue();
+                NextHopInfoTable nextHopeInfo = route.getValue();
                 // implement split horizon with poison reverse.
                 Integer hopCount = nextHopeInfo.hopCount;
-                if (hopCount > 1) {
+                if (neighbors.getValue().equals(nextHopeInfo.nextHopAddress) && hopCount > 1) {
                     hopCount = 16;
                 }
                 // add RIP entry
@@ -57,20 +37,21 @@ public class RIPSender implements Runnable {
             }
             // Packet setup
             byte[] data = rip.RIPEncodeData();
-            packet = new DatagramPacket(data, data.length, group, this.port);
+            DatagramPacket packet = new DatagramPacket(data, data.length, neighbors.getValue(), RIPReceiver.PORT);
             // let 'er rip
-            socket.send(packet);
-//            System.out.println("RIPSender: UDP packet sent.");
+            RIPReceiver.SOCKET.send(packet);
         }
+//        System.out.println("RIPSender: 10 sec - send update.");
+        RoutingTable rt = new RoutingTable();
+        rt.PrintRoutingTable();
+//        }
     }
 
     @Override
     public void run() {
-        System.out.println("RIPSender: RIP sender started");
-
+//        System.out.println("RIPSender: RIP sender started");
         while (true) {
             try {
-//                System.out.println("Sender: Call sendRoutingTable");
                 SendUDPPacket();
                 Thread.sleep(5000);
             } catch (InterruptedException | IOException e) {
@@ -82,6 +63,18 @@ public class RIPSender implements Runnable {
     public static void main(String[] args) {
 //        RoutingTable rt = new RoutingTable();
 //        LunarRover lr = new LunarRover();
+//
+////        RIPReceiver rr = new RIPReceiver(LunarRover.RIP_PORT, LunarRover.socket);
+//
+//        rr.ReceiveUDPPacket();
+//
+//        RIPSender rs = new RIPSender(LunarRover.RIP_PORT, LunarRover.socket);
+//        try {
+//            rs.SendUDPPacket();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
 //        try {
 //            RoutingTable.routeEntries.put(InetAddress.getByName("192.168.56.3"),
 //                    new NextHopInfoTable(InetAddress.getByName("255.255.255.0"),

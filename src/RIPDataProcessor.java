@@ -1,3 +1,4 @@
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Iterator;
@@ -6,52 +7,58 @@ public class RIPDataProcessor implements Runnable {
 
     private byte[] receivedBytes;
     private int offset;
+    private InetAddress addressReceived;
 
-    RIPDataProcessor(byte[] bytes) {
+    RIPDataProcessor(byte[] bytes, InetAddress addressReceived) {
         this.receivedBytes = bytes;
         this.offset = 0;
+        this.addressReceived = addressReceived;
     }
 
-    private void ProcessInputRIPData() {
+    private synchronized void ProcessInputRIPData() {
         //received raw data.
+//        boolean isTriggerUpdate = false;
         boolean isRouteChanged = false;
         RoutingTable rt = new RoutingTable();
         ByteBuffer byteBuffer = ByteBuffer.wrap(this.receivedBytes);
         byteBuffer.order(ByteOrder.nativeOrder());
 
-        synchronized (RoutingTable.routeEntriesLock) {
-            try {
-                RIP rip = new RIP();
-                rip = rip.RIPDecodeData(this.receivedBytes, this.offset, this.receivedBytes.length);
+        try {
+            RIP rip = new RIP();
+            rip = rip.RIPDecodeData(this.receivedBytes, this.offset, this.receivedBytes.length);
 
-                Iterator<RIPEntry> iterator = rip.ripEntries.iterator();
-                while (iterator.hasNext()) {
-                    RIPEntry entry = iterator.next();
-                    NextHopInfoTable nextHopInfo = new NextHopInfoTable(entry.getSubnetMask(), entry.getNextHopAddress(),
-                            0, entry.getHopCount());
+            Iterator<RIPEntry> iterator = rip.ripEntries.iterator();
+            while (iterator.hasNext()) {
+                RIPEntry entry = iterator.next();
+                NextHopInfoTable nextHopInfo = new NextHopInfoTable(entry.getSubnetMask(), this.addressReceived,
+                        0, entry.getHopCount());
 
 //                    System.out.println("RIPDataProcessor: calling updateRoutingTable");
+                // if receiving data from same ip. skip it.
+                if (!(nextHopInfo.nextHopAddress.equals(InetAddress.getByName(InetAddress.getLocalHost().getHostAddress())) ||
+                        nextHopInfo.nextHopAddress.equals(InetAddress.getByName("0.0.0.0")))) {
+
                     if (rt.updateRoutingTable(entry.getDestinationAddress(), nextHopInfo)) {
                         isRouteChanged = true;
+//                        System.out.println("RIPDataProcessor: Received update.");
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
             // if route table updated.
             if (isRouteChanged) {
-                // update special flag to trigger update.
-                RoutingTable.isTriggerUpdate = true;
-                System.out.println("RIPDataProcessor: Routing table updated.");
                 // print routing table.
                 rt.PrintRoutingTable();
+                // if RoutingTable.isTriggerUpdate flag is set, send trigger update.
+//                System.out.println("RIPDataProcessor: RIP Trigger update called.");
+//                Thread ripTriggerUpdate = new Thread(new RIPTriggerUpdate(LunarRover.MULTICAST_ADDRESS, LunarRover.MULTICAST_PORT), "RIP Trigger Update");
+//                ripTriggerUpdate.start();
+                RIPTriggerUpdate.isTriggerUpdate = true;
             }
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        // if RoutingTable.isTriggerUpdate flag is set, send trigger update.
-        if (RoutingTable.isTriggerUpdate) {
-            Thread ripTriggerUpdate = new Thread(new RIPTriggerUpdate(LunarRover.MULTICAST_ADDRESS, LunarRover.PORT), "RIP Trigger Update");
-            ripTriggerUpdate.start();
-        }
+
     }
 
     private void ProcessInputRIPResponse() {
@@ -82,8 +89,8 @@ public class RIPDataProcessor implements Runnable {
     }
 
     public static void main(String[] args) {
-        byte[] bufferData = RIPReceiver.hexStringToByteArray("0202000000020001c0a83803ffffff00c0a838030000000100020001c0a83803ffffff00c0a8380300000001");
-        RIPDataProcessor ripDataProcessor = new RIPDataProcessor(bufferData);
-        ripDataProcessor.run();
+//        byte[] bufferData = RIPMulticastReceiver.hexStringToByteArray("0202000000020001c0a83803ffffff00c0a838030000000100020001c0a83803ffffff00c0a8380300000001");
+//        RIPDataProcessor ripDataProcessor = new RIPDataProcessor(bufferData);
+//        ripDataProcessor.run();
     }
 }
