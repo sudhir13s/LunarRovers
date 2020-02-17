@@ -3,7 +3,6 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
 public class RIPEntry {
-
     private short addressFamilyIpv4 = 2;
     private short routeTag = 1;
     private InetAddress destinationAddress;

@@ -9,9 +9,8 @@ public class RIPTriggerUpdate implements Runnable {
 
     private InetAddress multicastAddress;
     private int port = 6520;
-
     volatile static boolean isTriggerUpdate = false;
-//    private final static int BUFFER_SIZE = 504;
+    volatile static boolean sendTriggerUpdate = false;
 
     public RIPTriggerUpdate(int nodeNum) throws UnknownHostException {
         this(InetAddress.getByName("230.230.230.230"), 6520);
@@ -35,47 +34,40 @@ public class RIPTriggerUpdate implements Runnable {
         // if RoutingTable.isTriggerUpdate flag is set, send trigger update.
         // get multicast group
 
-        // initial multicast. keep triggering.
-        if (RoutingTable.routeEntries.size() <= 1 || isTriggerUpdate) {
-//            System.out.println("Multicast Trigger updated.");
-            DatagramSocket socket = new DatagramSocket();
-            InetAddress group = this.multicastAddress;
-            DatagramPacket packet;
-            RoutingTable rt = new RoutingTable();
-            NextHopInfoTable nextHopeInfo;
-
-//            synchronized (RoutingTable.routeEntriesLock) {
+        if (isTriggerUpdate) {
             RIP rip = new RIP();
-            for (Map.Entry<InetAddress, NextHopInfoTable> route : RoutingTable.routeEntries.entrySet()) {
-                nextHopeInfo = route.getValue();
-
+            for (Map.Entry<InetAddress, NextHopInfoTable> route : RoutingTable.ROUTE_ENTRIES.entrySet()) {
+                NextHopInfoTable nextHopeInfo = route.getValue();
                 // add RIP entry which has metricChanged flag set to true.
                 if (nextHopeInfo.metricChanged) {
                     // implement split horizon with poison reverse.
                     Integer hopCount = nextHopeInfo.hopCount;
-                    if (LunarRover.MAPPING.containsValue(nextHopeInfo.nextHopAddress) && hopCount > 1) {
+                    if (LunarRover.NEIGHBORS_ENTRIES.containsValue(nextHopeInfo.nextHopAddress) && hopCount > 1) {
                         hopCount = 16;
                     }
                     RIPEntry ripEntry = new RIPEntry(route.getKey(), nextHopeInfo.subnetMask, nextHopeInfo.nextHopAddress, hopCount);
                     rip.ripEntries.add(ripEntry);
-                    // change the metricChanged flag and update.
                     nextHopeInfo.metricChanged = false;
 //                rt.updateRoutingTable(route.getKey(), nextHopeInfo);
-                    RoutingTable.routeEntries.put(route.getKey(), nextHopeInfo);
-
+                    RoutingTable.ROUTE_ENTRIES.put(route.getKey(), nextHopeInfo);
+                    sendTriggerUpdate = true;
                     isTriggerUpdate = false;
-//                    System.out.println("RIPTriggerUpdate: isTriggerUpdate - " + isTriggerUpdate);
-                } else if (RoutingTable.routeEntries.size() <= 1) {
-                    RIPEntry ripEntry = new RIPEntry(route.getKey(), nextHopeInfo.subnetMask, nextHopeInfo.nextHopAddress, nextHopeInfo.hopCount);
-                    rip.ripEntries.add(ripEntry);
                 }
+//                else if (RoutingTable.ROUTE_ENTRIES.size() <= 1) {
+//                    RIPEntry ripEntry = new RIPEntry(route.getKey(), nextHopeInfo.subnetMask, nextHopeInfo.nextHopAddress, nextHopeInfo.hopCount);
+//                    rip.ripEntries.add(ripEntry);
+//                }
             }
-            // Packet setup
-            byte[] data = rip.RIPEncodeData();
-            packet = new DatagramPacket(data, data.length, group, this.port);
-            // let 'er rip
-            socket.send(packet);
 
+            if (sendTriggerUpdate) {
+                // Packet setup
+                DatagramSocket socket = new DatagramSocket();
+                InetAddress group = this.multicastAddress;
+                byte[] data = rip.RIPEncodeData();
+                DatagramPacket packet = new DatagramPacket(data, data.length, group, this.port);
+                socket.send(packet);
+                sendTriggerUpdate = false;
+            }
         }
     }
 
@@ -85,7 +77,7 @@ public class RIPTriggerUpdate implements Runnable {
         while (true)
             try {
                 SendTriggerUpdate();
-                Thread.sleep(5000);
+                Thread.sleep(100);
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }

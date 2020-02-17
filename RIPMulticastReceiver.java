@@ -2,10 +2,10 @@ import java.io.IOException;
 import java.net.*;
 
 public class RIPMulticastReceiver implements Runnable {
-
     private static MulticastSocket multicastSocket;
     private InetAddress multicastAddress;
     private int multicastPort = 5520;
+    private final int BUFFER_SIZE = 504;
 
     RIPMulticastReceiver() throws UnknownHostException {
         this(InetAddress.getByName("224.0.0.9"), 5520);
@@ -28,27 +28,27 @@ public class RIPMulticastReceiver implements Runnable {
     private void JoinMulticastGroup() throws IOException {
         multicastSocket = new MulticastSocket(this.multicastPort);
         multicastSocket.joinGroup(this.multicastAddress);
-//        System.out.println("RIPMulticastReceiver: Joined multicast group on port " + this.multicastPort);
     }
 
     private void ReceiveRIPData() throws InterruptedException {
         while (true) {
             try {
-                int bufferSize = 504;
-                byte[] bufferData = new byte[bufferSize];
+                byte[] bufferData = new byte[this.BUFFER_SIZE];
 //                byte[] bufferData = hexStringToByteArray("0202000000020001c0a83803ffffff00c0a8380300000001c0a83804ffffff00c0a8380400000001");
                 DatagramPacket receiverPacket = new DatagramPacket(bufferData, bufferData.length);
                 multicastSocket.receive(receiverPacket);
-
-//                System.out.println("RIPMulticastReceiver: Received Multicast message.");
-                byte[] data = receiverPacket.getData();
-                RIPDataProcessor ripDataProcessor = new RIPDataProcessor(data, receiverPacket.getAddress());
-                Thread ripDataProcessorThread = new Thread(ripDataProcessor, "RIP Data Processor");
-                ripDataProcessorThread.start();
+                // if not a self multicast.
+                if (!receiverPacket.getAddress().equals(InetAddress.getLocalHost())) {
+//                    System.out.println("RIPMulticastReceiver: Received Multicast from : " + receiverPacket.getAddress());
+                    byte[] data = receiverPacket.getData();
+                    RIPDataProcessor ripDataProcessor = new RIPDataProcessor(data, receiverPacket.getAddress());
+                    Thread ripDataProcessorThread = new Thread(ripDataProcessor, "RIP Data Processor");
+                    ripDataProcessorThread.start();
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            Thread.sleep(1000);
+//            Thread.sleep(100);
         }
     }
 
@@ -73,7 +73,6 @@ public class RIPMulticastReceiver implements Runnable {
 
     @Override
     public void run() {
-//        System.out.println("RIPMulticastReceiver: RIP Multicast Receiver started");
         try {
             ReceiveMulticastPacket();
         } catch (IOException e) {
@@ -92,13 +91,6 @@ public class RIPMulticastReceiver implements Runnable {
     }
 
     public static void main(String[] args) {
-//        RIPMulticastReceiver server = null;
-//        try {
-//            server = new RIPMulticastReceiver();
-//        } catch (UnknownHostException e) {
-//            e.printStackTrace();
-//        }
-//        assert server != null;
-//        server.ReceiveRIPData();
+
     }
 }

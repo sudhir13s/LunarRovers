@@ -4,7 +4,6 @@ import java.nio.ByteOrder;
 import java.util.Iterator;
 
 public class RIPDataProcessor implements Runnable {
-
     private byte[] receivedBytes;
     private int offset;
     private InetAddress addressReceived;
@@ -16,13 +15,10 @@ public class RIPDataProcessor implements Runnable {
     }
 
     private synchronized void ProcessInputRIPData() {
-        //received raw data.
-//        boolean isTriggerUpdate = false;
         boolean isRouteChanged = false;
         RoutingTable rt = new RoutingTable();
         ByteBuffer byteBuffer = ByteBuffer.wrap(this.receivedBytes);
         byteBuffer.order(ByteOrder.nativeOrder());
-
         try {
             RIP rip = new RIP();
             rip = rip.RIPDecodeData(this.receivedBytes, this.offset, this.receivedBytes.length);
@@ -33,44 +29,29 @@ public class RIPDataProcessor implements Runnable {
                 NextHopInfoTable nextHopInfo = new NextHopInfoTable(entry.getSubnetMask(), this.addressReceived,
                         0, entry.getHopCount());
 
-//                    System.out.println("RIPDataProcessor: calling updateRoutingTable");
                 // if receiving data from same ip. skip it.
                 if (!(nextHopInfo.nextHopAddress.equals(InetAddress.getByName(InetAddress.getLocalHost().getHostAddress())) ||
                         nextHopInfo.nextHopAddress.equals(InetAddress.getByName("0.0.0.0")))) {
-
                     if (rt.updateRoutingTable(entry.getDestinationAddress(), nextHopInfo)) {
                         isRouteChanged = true;
-//                        System.out.println("RIPDataProcessor: Received update.");
                     }
                 }
             }
-            // if route table updated.
+            // if route table updated. if RoutingTable.isTriggerUpdate flag is set, send trigger update.
             if (isRouteChanged) {
-                // print routing table.
-                rt.PrintRoutingTable();
-                // if RoutingTable.isTriggerUpdate flag is set, send trigger update.
-//                System.out.println("RIPDataProcessor: RIP Trigger update called.");
-//                Thread ripTriggerUpdate = new Thread(new RIPTriggerUpdate(LunarRover.MULTICAST_ADDRESS, LunarRover.MULTICAST_PORT), "RIP Trigger Update");
-//                ripTriggerUpdate.start();
+//                rt.PrintRoutingTable();
                 RIPTriggerUpdate.isTriggerUpdate = true;
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-    }
-
-    private void ProcessInputRIPResponse() {
-//        RIP rip = ProcessInputRIPHeader();
-//        ProcessInputRIPData();
     }
 
     private void ProcessInputData() {
         switch (this.receivedBytes[0]) {
             case 1:
                 // ProcessRIPRequest(); // implement later.
-//                break;
+                // break;
             case 2:
                 ProcessInputRIPData();
                 break;
