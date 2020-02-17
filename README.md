@@ -2,15 +2,10 @@
 
 README.md
 ==========================
-Date: 12-08-2019
-Authors: Sudhir Singh
-RIT ID: ss6842
-RID email: ss6842@cs.rit.edu
-
 
 ### Introduction: 
 The LunarRover project
-Part 1: Implement RIPv2 protocol to enable reover to send each other routing table.
+Part 1: Implemented RIPv2 protocol to enable reover to send each other routing table.
 Part 2: Implemented a protocol (Lunar Rover Protocol) to send data.
 Part 3: Combined the project part 1 and 2 to complete the project and send the data through one Rover to another rover.
 
