@@ -1,4 +1,4 @@
-# Lunar Rover - Final project
+# Lunar Rovers
 
 README.md
 ==========================
