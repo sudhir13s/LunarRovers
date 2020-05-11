@@ -4,13 +4,13 @@ README.md
 
 ### Introduction: 
 A project as part of the networking class. As part of the project,
-Part 1: Implement RIP-version2 protocol to enable routers to send each other routing table.
-Part 2: Implemented my own protocol for reliable communication (stop and wait).
-Part 3: Combined the project part 1 and 2 to complete the project and send the data through one router to another router.
+
+    Part 1: Implement RIP-version2 protocol to enable routers to send each other routing table.
+    Part 2: Implemented my own protocol for reliable communication (stop and wait).
+    Part 3: Combined the project part 1 and 2 to complete the project and send the data through one router to another router.
 
 ### Requirements: 
-Please follow the sample docker files (README-1.md) provided as part of this project. Also, please refer to the protocol design.
-Also, as part of this project, below cases has been assumed.
+Please follow the sample docker files (README-1.md) provided as part of this project. Also, please refer to the protocol design. Also, as part of this project, below cases has been assumed.
 
     Multicast address: 224.0.0.9 
     (This is the address on which all routers will join to send/receive multicast messages.)
