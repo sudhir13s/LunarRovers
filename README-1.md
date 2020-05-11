@@ -1,4 +1,4 @@
-# Multicast Test
+# Docker environment
 A Docker environment for testing networking Java programs
 
 This uses the Docker OpenJDK container with added iptables to run Java applications.  A web interface is provided to dynamically block containers from talking with certain other containers as needed for testing.  Although originally designed for testing multicast applications, it can work with any networking java application.
@@ -12,7 +12,6 @@ This will also build any java files in the current directory in the container.
 Only needs to be done once.
 
 `docker network create --subnet=172.18.0.0/16 nodenet `
-
 
 ### To Run (for example, node 1)
 This will ultimately run the java Main class as an application.
@@ -33,5 +32,3 @@ Using the unblock=ip http query parameter.
 `curl "http://172.18.0.21:8080/?unblock=172.18.0.22" `
 
 Note that multiple commands can be appended on one URL.
-
-# ENJOY!
